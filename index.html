@@ -1,19 +1,696 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Bolsa de Valores</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📊 Meu Portfolio - Bolsa de Valores</title>
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        /* ===== RESET E BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0b0e14;
+            color: #eaeef2;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .dashboard {
+            max-width: 1280px;
+            width: 100%;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #1e2630;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: #1e2630;
+            border: none;
+            color: #c8d0d8;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background: #2a3440;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #2a3440;
+        }
+        .btn-outline:hover {
+            background: #1e2630;
+        }
+
+        /* ===== SALDO ===== */
+        .balance-card {
+            background: linear-gradient(135deg, #111a24, #0f141c);
+            border: 1px solid #1e2630;
+            border-radius: 20px;
+            padding: 24px 28px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .balance-label {
+            font-size: 14px;
+            color: #8892a0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .balance-value {
+            font-size: 38px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .balance-value .change {
+            font-size: 18px;
+            font-weight: 600;
+            margin-left: 12px;
+        }
+        .change.positive {
+            color: #10b981;
+        }
+        .change.negative {
+            color: #ef4444;
+        }
+
+        /* ===== ABAS ===== */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: #111a24;
+            border-radius: 14px;
+            padding: 4px;
+            margin-bottom: 28px;
+            border: 1px solid #1e2630;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            flex: 1;
+            min-width: 120px;
+            background: transparent;
+            border: none;
+            color: #8892a0;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            color: #eaeef2;
+            background: #1a2532;
+        }
+
+        .tab-btn.active {
+            background: #2563eb;
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.35s ease;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== TABELA DE AÇÕES ===== */
+        .table-wrapper {
+            background: #111a24;
+            border: 1px solid #1e2630;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 28px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 15px;
+        }
+
+        thead {
+            background: #0d1620;
+        }
+
+        th {
+            text-align: left;
+            padding: 16px 20px;
+            color: #8892a0;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        td {
+            padding: 14px 20px;
+            border-top: 1px solid #1a2532;
+        }
+
+        .symbol {
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .price {
+            font-weight: 600;
+        }
+
+        .change-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .change-badge.positive {
+            background: #064e3b;
+            color: #34d399;
+        }
+        .change-badge.negative {
+            background: #7f1d1d;
+            color: #f87171;
+        }
+
+        /* ===== GRÁFICO ===== */
+        .chart-card {
+            background: #111a24;
+            border: 1px solid #1e2630;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 28px;
+        }
+
+        .chart-card h3 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #c8d0d8;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        /* ===== NOTÍCIAS / FEED ===== */
+        .news-feed {
+            background: #111a24;
+            border: 1px solid #1e2630;
+            border-radius: 16px;
+            padding: 20px 24px;
+        }
+
+        .news-feed h3 {
+            font-size: 18px;
+            margin-bottom: 14px;
+            color: #c8d0d8;
+        }
+
+        .news-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #1a2532;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+        .news-item:last-child {
+            border-bottom: none;
+        }
+
+        .news-item .badge {
+            background: #1e293b;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #94a3b8;
+            white-space: nowrap;
+        }
+
+        .news-item p {
+            color: #c8d0d8;
+            font-size: 15px;
+        }
+
+        .news-item .time {
+            color: #64748b;
+            font-size: 13px;
+            margin-left: auto;
+            white-space: nowrap;
+        }
+
+        /* ===== RESPONSIVO ===== */
+        @media (max-width: 700px) {
+            .balance-value {
+                font-size: 28px;
+            }
+            .header h1 {
+                font-size: 22px;
+            }
+            .tab-btn {
+                font-size: 13px;
+                padding: 10px 12px;
+                min-width: 80px;
+            }
+            .table-wrapper {
+                overflow-x: auto;
+            }
+            th,
+            td {
+                padding: 12px 14px;
+                font-size: 14px;
+            }
+            .btn {
+                padding: 8px 14px;
+                font-size: 13px;
+            }
+            .news-item {
+                flex-wrap: wrap;
+            }
+            .news-item .time {
+                margin-left: 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .balance-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .header-actions .btn span {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Dashboard de Ações</h1>
-    <div id="dados-bolsa">
-        <p>Carregando dados da bolsa...</p>
+
+    <div class="dashboard">
+
+        <!-- ===== HEADER ===== -->
+        <header class="header">
+            <h1><i class="fas fa-chart-line" style="margin-right:10px;color:#60a5fa;"></i> Meu Portfolio</h1>
+            <div class="header-actions">
+                <button class="btn btn-outline" onclick="atualizarTodos()">
+                    <i class="fas fa-sync-alt"></i> <span>Atualizar</span>
+                </button>
+                <button class="btn btn-primary" onclick="simularCompra()">
+                    <i class="fas fa-plus-circle"></i> <span>Simular Compra</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ===== SALDO ===== -->
+        <div class="balance-card" id="balanceCard">
+            <div>
+                <div class="balance-label"><i class="fas fa-wallet" style="margin-right:6px;"></i> Saldo Total</div>
+                <div class="balance-value" id="saldoTotal">R$ 45.230,00</div>
+            </div>
+            <div>
+                <span class="balance-label" style="display:block;text-align:right;">Variação hoje</span>
+                <span class="change positive" id="variacaoHoje"><i class="fas fa-arrow-up"></i> +2,34%</span>
+            </div>
+        </div>
+
+        <!-- ===== ABAS ===== -->
+        <div class="tabs" id="tabContainer">
+            <button class="tab-btn active" data-tab="tab1"><i class="fas fa-list"></i> Minhas Ações</button>
+            <button class="tab-btn" data-tab="tab2"><i class="fas fa-chart-bar"></i> Gráfico</button>
+            <button class="tab-btn" data-tab="tab3"><i class="fas fa-newspaper"></i> Notícias</button>
+        </div>
+
+        <!-- ===== CONTEÚDO DAS ABAS ===== -->
+
+        <!-- ABA 1: Ações -->
+        <div class="tab-content active" id="tab1">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ativo</th>
+                            <th>Preço</th>
+                            <th>Variação</th>
+                            <th>Quantidade</th>
+                            <th>Valor Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaAcoes">
+                        <!-- Preenchido via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;">
+                <button class="btn btn-success" onclick="atualizarPrecos()">
+                    <i class="fas fa-sync-alt"></i> Atualizar Preços
+                </button>
+            </div>
+        </div>
+
+        <!-- ABA 2: Gráfico -->
+        <div class="tab-content" id="tab2">
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-area" style="margin-right:8px;color:#60a5fa;"></i> Evolução dos Preços (simulada)</h3>
+                <div class="chart-container">
+                    <canvas id="meuGrafico"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 3: Notícias -->
+        <div class="tab-content" id="tab3">
+            <div class="news-feed">
+                <h3><i class="fas fa-rss" style="margin-right:8px;color:#60a5fa;"></i> Últimas Notícias</h3>
+                <div id="feedNoticias">
+                    <!-- Preenchido via JavaScript -->
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // O motor será ligado aqui em breve!
-        console.log("O sistema está online.");
+        // ============================================================
+        //  DADOS SIMULADOS
+        // ============================================================
+
+        const acoes = [
+            { symbol: 'PETR4', name: 'Petrobras', price: 38.75, qty: 150 },
+            { symbol: 'VALE3', name: 'Vale', price: 62.30, qty: 80 },
+            { symbol: 'ITUB4', name: 'Itaú', price: 34.90, qty: 200 },
+            { symbol: 'BBDC4', name: 'Bradesco', price: 18.45, qty: 120 },
+            { symbol: 'MGLU3', name: 'Magazine Luiza', price: 11.82, qty: 300 },
+        ];
+
+        let chartInstance = null;
+
+        // ============================================================
+        //  FUNÇÕES AUXILIARES
+        // ============================================================
+
+        function randomFloat(min, max, decimals = 2) {
+            return +(Math.random() * (max - min) + min).toFixed(decimals);
+        }
+
+        function gerarVariacao() {
+            return randomFloat(-3.5, 4.0, 2);
+        }
+
+        function formatarMoeda(valor) {
+            return 'R$ ' + valor.toFixed(2).replace('.', ',');
+        }
+
+        function calcularTotal() {
+            let total = 0;
+            acoes.forEach(a => total += a.price * a.qty);
+            document.getElementById('saldoTotal').textContent = formatarMoeda(total);
+            // variação simulada
+            const variacao = randomFloat(-1.5, 3.8, 2);
+            const sinal = variacao >= 0 ? '+' : '';
+            const el = document.getElementById('variacaoHoje');
+            el.className = 'change ' + (variacao >= 0 ? 'positive' : 'negative');
+            el.innerHTML = `<i class="fas fa-arrow-${variacao >= 0 ? 'up' : 'down'}"></i> ${sinal}${variacao}%`;
+        }
+
+        // ============================================================
+        //  RENDER: TABELA DE AÇÕES
+        // ============================================================
+
+        function renderizarTabela() {
+            const tbody = document.getElementById('tabelaAcoes');
+            tbody.innerHTML = '';
+            acoes.forEach(a => {
+                const variacao = gerarVariacao();
+                const classe = variacao >= 0 ? 'positive' : 'negative';
+                const sinal = variacao >= 0 ? '+' : '';
+                const total = a.price * a.qty;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="symbol">${a.symbol}</span> <span style="color:#8892a0;font-size:13px;">${a.name}</span></td>
+                    <td class="price">${formatarMoeda(a.price)}</td>
+                    <td><span class="change-badge ${classe}">${sinal}${variacao}%</span></td>
+                    <td>${a.qty}</td>
+                    <td>${formatarMoeda(total)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            calcularTotal();
+        }
+
+        // ============================================================
+        //  RENDER: NOTÍCIAS
+        // ============================================================
+
+        function renderizarNoticias() {
+            const feed = document.getElementById('feedNoticias');
+            const noticias = [
+                { texto: 'Petrobras anuncia novo plano de investimentos de US$ 102 bi.', tempo: 'Agora mesmo' },
+                { texto: 'Vale projeta alta na produção de minério de ferro para 2026.', tempo: 'Há 15 min' },
+                { texto: 'Itaú revisa projeção do PIB para 2026 para 2,8%.', tempo: 'Há 1 hora' },
+                { texto: 'Magazine Luiza registra recorde de vendas no marketplace.', tempo: 'Há 2 horas' },
+                { texto: 'Ibovespa opera em alta impulsionado por commodities.', tempo: 'Há 3 horas' },
+            ];
+            feed.innerHTML = noticias.map(n => `
+                <div class="news-item">
+                    <span class="badge">Destaque</span>
+                    <p>${n.texto}</p>
+                    <span class="time"><i class="far fa-clock"></i> ${n.tempo}</span>
+                </div>
+            `).join('');
+        }
+
+        // ============================================================
+        //  GRÁFICO (Chart.js)
+        // ============================================================
+
+        function criarGrafico() {
+            const ctx = document.getElementById('meuGrafico').getContext('2d');
+            const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            // dados simulados para PETR4
+            const dados = labels.map(() => randomFloat(32, 44, 2));
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'PETR4 (simulado)',
+                        data: dados,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59,130,246,0.08)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#3b82f6',
+                        pointBorderColor: '#0b0e14',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#c8d0d8', font: { size: 13 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'R$ ' + context.parsed.y.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#1a2532' },
+                            ticks: { color: '#8892a0' }
+                        },
+                        y: {
+                            grid: { color: '#1a2532' },
+                            ticks: { color: '#8892a0', callback: (v) => 'R$' + v.toFixed(0) }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        //  AÇÕES DOS BOTÕES
+        // ============================================================
+
+        function atualizarPrecos() {
+            acoes.forEach(a => {
+                a.price = randomFloat(a.price * 0.92, a.price * 1.10, 2);
+                a.price = Math.max(a.price, 0.50);
+            });
+            renderizarTabela();
+            // atualiza gráfico com novo ponto
+            if (chartInstance) {
+                const dataset = chartInstance.data.datasets[0];
+                const novosDados = dataset.data.slice(1);
+                novosDados.push(randomFloat(32, 44, 2));
+                dataset.data = novosDados;
+                chartInstance.update();
+            }
+            // feedback visual rápido
+            const btn = document.querySelector('.btn-success');
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> Atualizado!';
+            setTimeout(() => { btn.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar Preços'; }, 1200);
+        }
+
+        function atualizarTodos() {
+            atualizarPrecos();
+            renderizarNoticias();
+            const btn = document.querySelector('.btn-outline');
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Tudo atualizado</span>';
+            setTimeout(() => { btn.innerHTML = '<i class="fas fa-sync-alt"></i> <span>Atualizar</span>'; }, 1400);
+        }
+
+        function simularCompra() {
+            const acao = acoes[Math.floor(Math.random() * acoes.length)];
+            const qtd = Math.floor(Math.random() * 50) + 10;
+            const valor = acao.price * qtd;
+            alert(`💰 Compra simulada: ${qtd} ações de ${acao.symbol} por ${formatarMoeda(valor)}`);
+            // atualiza quantidade
+            acao.qty += qtd;
+            renderizarTabela();
+        }
+
+        // ============================================================
+        //  SISTEMA DE ABAS
+        // ============================================================
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab).classList.add('active');
+                // redimensiona gráfico se a aba 2 for ativada
+                if (this.dataset.tab === 'tab2' && chartInstance) {
+                    setTimeout(() => chartInstance.resize(), 150);
+                }
+            });
+        });
+
+        // ============================================================
+        //  ATUALIZAÇÃO AUTOMÁTICA (a cada 30 segundos)
+        // ============================================================
+
+        setInterval(() => {
+            atualizarPrecos();
+        }, 30000);
+
+        // ============================================================
+        //  INICIALIZAÇÃO
+        // ============================================================
+
+        renderizarTabela();
+        renderizarNoticias();
+        criarGrafico();
+
+        console.log('🚀 Dashboard da Bolsa carregado!');
+        console.log('💡 Dica: os dados são simulados para demonstração.');
     </script>
+
 </body>
 </html>
